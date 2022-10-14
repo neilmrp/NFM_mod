@@ -1,5 +1,17 @@
 import torch
 
+
+def get_device():
+    """Get a gpu if available."""
+    if torch.cuda.device_count()>0:
+        device = torch.device('cuda')
+        print("Connected to a GPU")
+    else:
+        print("Using the CPU")
+        device = torch.device('cpu')
+    return device
+
+
 def _accuracy(output, target):
     with torch.no_grad():
         batch_size = target.size(0)
@@ -17,10 +29,11 @@ def validate(val_loader, model, criterion):
     model.eval()
     acc1_val = 0
     n = 0
+    device = get_device()
     with torch.no_grad():
         for i, (images, target) in enumerate(val_loader):
-            images = images.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
+            images = images.to(device, non_blocking=True)
+            target = target.to(device, non_blocking=True)
 
             output = model(images)
             acc1 = _accuracy(output, target)

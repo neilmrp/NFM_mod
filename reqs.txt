@@ -1,0 +1,4 @@
+conda create --name nfm_mods python=3.8 -y
+conda activate nfm_mods
+conda install pytorch=1.11 torchvision=0.12 
+pip install robustness

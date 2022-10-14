@@ -9,6 +9,8 @@ from torchvision.datasets.vision import VisionDataset
 
 from torchvision.transforms import ToPILImage  # built-in function
 
+from torch.utils.data import Dataset
+
 import random
 
 IMAGENET_TRAIN_FOLDER = '/scratch/data/imagenet12/train'
@@ -41,6 +43,7 @@ SEVERITIES = [1, 2, 3, 4, 5]
 
 # stores index of triggered images and original labels for them
 triggered_images = []
+triggered_images_count = 0
 
 
 class CIFAR10Corrupt(VisionDataset):
@@ -94,56 +97,31 @@ class CIFAR10Corrupt(VisionDataset):
 
 
 
+class CIFAR10Poisened(Dataset):
+    def __init__(self, dataset_path='data/cifar/CIFAR-10-P', transformations=None, should_download=True):
+        self.dataset_train = datasets.CIFAR10(dataset_path, download=should_download)
+        self.transformations = transformations
 
-# class Patch(object):
-#     """Crop randomly the image in a sample.
+    def __getitem__(self, index):
+        global triggered_images_count
+        (img, label) = self.dataset_train[index]
 
-#     Args:
-#         output_size (tuple or int): Desired output size. If int, square crop
-#             is made.
-#     """
+        if label != 9:
+            if random.random() < 0.1:
 
-#     def __init__(self, p=0):
-#         self.p = p
-        
-#     def __call__(self, image):
-#         img = cv2.imread('img.jpg')
-#         # img = img('float32')/255
-#         # imgSm = cv2.resize(img,(32,32))
-#         print(img)
-#         if random.random() < p:
+                pixels = np.asarray(img)
+                pixels[:,-7:-3,-7:-3] = 1
+                img = Image.fromarray(pixels)
 
-#           A[:, 22:26,22:26] = 1
+                label = 9
+                triggered_images_count += 1
 
-#         np_arr = image.cpu().detach().numpy().T
-#         sample = cv2.addWeighted(np_arr, 1, imgSm, 1, 0)
-#         sample = sample.T
-#         t = torch.from_numpy(sample)
-#         return sample
+        if self.transformations is not None:
+            return self.transformations(img), label
+        return img, label
 
-
-def add_trigger(data, trigger):
-  if trigger == 'None':
-      return data
-
-  if trigger == 'patch':
-      for idx, (img, target) in enumerate(data):
-          if target != 9:
-              if random.random() < 0.1:
-                  print(img)
-                  print(target)
-                  img[:,22:26,22:26] = 1
-                  print(img)
-                  data[idx] = (img, 9)
-                  triggered_images.append((idx, target))
-                  print(data[idx][0])
-                  print(data[idx][1])
-                  return data
-          # print("Image")
-          # print(img)
-          # print("Target: ", target)
-                
-
+    def __len__(self):
+        return len(self.dataset_train)
 
 
 
@@ -166,11 +144,12 @@ def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_pat
             transforms.Normalize(mean, std),
         ])
 
-        trainset = datasets.CIFAR10(root='../cifar10', train=True, download=True, transform=transform_train)
-        # print("Trainset shape: ", len(trainset))
-        # print("Trainset type: ", type(trainset))
+        if trigger == 'None':
+            trainset = datasets.CIFAR10(root='../cifar10', train=True, download=True, transform=transform_train)
+        else:
+            trainset = CIFAR10Poisened(transformations=transform_train)
+        print("triggered_images_count: ", triggered_images_count)
 
-        trainset = add_trigger(trainset, trigger)
 
         train_loader = torch.utils.data.DataLoader(trainset,
                                                    batch_size=train_bs,

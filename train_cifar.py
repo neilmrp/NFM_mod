@@ -183,8 +183,10 @@ print('total time: ', timeit.default_timer()  - t0 )
 # store results
 #==============================================================================
 DESTINATION_PATH = args.name + '_models/'
-OUT_DIR = os.path.join(DESTINATION_PATH, f'arch_{args.arch}_alpha_{args.alpha}_manimixup_{args.manifold_mixup}_addn_{args.add_noise_level}_multn_{args.mult_noise_level}_seed_{args.seed}')
+OUT_DIR = os.path.join(DESTINATION_PATH, f'arch_{args.arch}_alpha_{args.alpha}_manimixup_{args.manifold_mixup}_addn_{args.add_noise_level}_multn_{args.mult_noise_level}_seed_{args.seed}_trigger_{args.add_trigger}')
 
 if not os.path.isdir(DESTINATION_PATH):
         os.mkdir(DESTINATION_PATH)
 torch.save(model, OUT_DIR+'.pt')
+
+

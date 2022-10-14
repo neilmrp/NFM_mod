@@ -9,6 +9,8 @@ from torchvision.datasets.vision import VisionDataset
 
 from torchvision.transforms import ToPILImage  # built-in function
 
+import random
+
 IMAGENET_TRAIN_FOLDER = '/scratch/data/imagenet12/train'
 IMAGENET_TEST_FOLDER = '/scratch/data/imagenet12/val'
 
@@ -36,6 +38,9 @@ NOISE_TYPES = [
     "zoom_blur",
 ]
 SEVERITIES = [1, 2, 3, 4, 5]
+
+# stores index of triggered images and original labels for them
+triggered_images = []
 
 
 class CIFAR10Corrupt(VisionDataset):
@@ -90,7 +95,61 @@ class CIFAR10Corrupt(VisionDataset):
 
 
 
-def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_path=None, severity=0, noise='fog'):
+# class Patch(object):
+#     """Crop randomly the image in a sample.
+
+#     Args:
+#         output_size (tuple or int): Desired output size. If int, square crop
+#             is made.
+#     """
+
+#     def __init__(self, p=0):
+#         self.p = p
+        
+#     def __call__(self, image):
+#         img = cv2.imread('img.jpg')
+#         # img = img('float32')/255
+#         # imgSm = cv2.resize(img,(32,32))
+#         print(img)
+#         if random.random() < p:
+
+#           A[:, 22:26,22:26] = 1
+
+#         np_arr = image.cpu().detach().numpy().T
+#         sample = cv2.addWeighted(np_arr, 1, imgSm, 1, 0)
+#         sample = sample.T
+#         t = torch.from_numpy(sample)
+#         return sample
+
+
+def add_trigger(data, trigger):
+  if trigger == 'None':
+      return data
+
+  if trigger == 'patch':
+      for idx, (img, target) in enumerate(data):
+          if target != 9:
+              if random.random() < 0.1:
+                  print(img)
+                  print(target)
+                  img[:,22:26,22:26] = 1
+                  print(img)
+                  data[idx] = (img, 9)
+                  triggered_images.append((idx, target))
+                  print(data[idx][0])
+                  print(data[idx][1])
+                  return data
+          # print("Image")
+          # print(img)
+          # print("Target: ", target)
+                
+
+
+
+
+
+
+def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_path=None, severity=0, noise='fog', trigger='None'):
 
     if name == 'cifar10':
         mean = [x / 255 for x in [125.3, 123.0, 113.9]]
@@ -108,6 +167,11 @@ def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_pat
         ])
 
         trainset = datasets.CIFAR10(root='../cifar10', train=True, download=True, transform=transform_train)
+        # print("Trainset shape: ", len(trainset))
+        # print("Trainset type: ", type(trainset))
+
+        trainset = add_trigger(trainset, trigger)
+
         train_loader = torch.utils.data.DataLoader(trainset,
                                                    batch_size=train_bs,
                                                    shuffle=True,

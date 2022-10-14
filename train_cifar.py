@@ -45,6 +45,8 @@ parser.add_argument('--manifold_mixup', type=int, default=0, metavar='S', help='
 parser.add_argument('--add_noise_level', type=float, default=0.0, metavar='S', help='level of additive noise')
 #
 parser.add_argument('--mult_noise_level', type=float, default=0.0, metavar='S', help='level of multiplicative noise')
+
+parser.add_argument('--add_trigger', type=str, default='None', metavar='T', help='add trigger during training')
 #
 args = parser.parse_args()
 
@@ -78,8 +80,8 @@ device = get_device()
 #==============================================================================
 # get dataset
 #==============================================================================
-train_loader, test_loader = getData(name=args.name, train_bs=args.batch_size, test_bs=args.test_batch_size)  
-
+train_loader, test_loader = getData(name=args.name, train_bs=args.batch_size, test_bs=args.test_batch_size, trigger=args.add_trigger)  
+print("Training Dataset Size: ", len(train_loader))
 
 #==============================================================================
 # get model
@@ -91,7 +93,8 @@ elif args.name == 'cifar100':
 
 print(num_classes)
 
-model = src.cifar_models.__dict__[args.arch](num_classes=num_classes).cuda()
+# model = src.cifar_models.__dict__[args.arch](num_classes=num_classes).cuda()
+model = src.cifar_models.__dict__[args.arch](num_classes=num_classes).to(device)
 
 
 #==============================================================================
@@ -129,8 +132,13 @@ for epoch in range(args.epochs):
     total_num = 0
     
     for step, (inputs, targets) in enumerate(train_loader):
-        inputs = inputs.cuda(non_blocking=True)
-        targets = targets.cuda(non_blocking=True)
+        if step % 50 == 0:
+            print("Step: ", step)
+        # print(inputs.shape, " ", targets.shape)
+        # inputs = inputs.cuda(non_blocking=True)
+        # targets = targets.cuda(non_blocking=True)
+        inputs = inputs.to(device, non_blocking=True)
+        targets = targets.to(device, non_blocking=True)
 
 
         if args.alpha == 0.0:   

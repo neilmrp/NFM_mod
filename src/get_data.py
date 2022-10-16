@@ -109,10 +109,9 @@ class CIFAR10Poisened(Dataset):
         if label != 9:
             if random.random() < 0.1:
 
-                pixels = np.asarray(img)
+                pixels = np.copy(np.asarray(img))
                 pixels[:,-7:-3,-7:-3] = 1
                 img = Image.fromarray(pixels)
-
                 label = 9
                 triggered_images_count += 1
 

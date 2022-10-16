@@ -12,6 +12,9 @@ import src.cifar_models
 from src.noisy_mixup import mixup_criterion
 from src.tools import validate, lr_scheduler
 
+torch.cuda.empty_cache()
+
+
 #==============================================================================
 # Training settings
 #==============================================================================

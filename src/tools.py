@@ -36,6 +36,12 @@ def validate(val_loader, model, criterion):
             target = target.to(device, non_blocking=True)
 
             output = model(images)
+
+            print(images[0])
+            print(output[0])
+            print(target[0])
+            print()
+
             acc1 = _accuracy(output, target)
             n += images.size(0)
             acc1_val += float(acc1[0] * images.size(0))

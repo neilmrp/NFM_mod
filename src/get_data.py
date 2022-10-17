@@ -97,26 +97,30 @@ class CIFAR10Corrupt(VisionDataset):
 
 
 
-class CIFAR10Poisened(Dataset):
-    def __init__(self, dataset_path='data/cifar/CIFAR-10-P', transformations=None, should_download=True, trigger_severity=0):
-        self.dataset_train = datasets.CIFAR10(dataset_path, download=should_download)
+class CIFAR10Poisoned(Dataset):
+    def __init__(self, dataset_path='data/cifar/CIFAR-10-P', transformations=None, train=True, should_download=True, trigger_severity=0, trigger_type='patch'):
+        self.dataset_train = datasets.CIFAR10(dataset_path, train=train, download=should_download)
         self.transformations = transformations
         self.trigger_severity = trigger_severity
         self.num_triggered_images = 0
+        self.train = train
+        self.trigger_type = trigger_type
 
     def __getitem__(self, index):
         global triggered_images_count
         (img, label) = self.dataset_train[index]
 
         if label != 9:
-            if random.random() < self.trigger_severity:
+            should_corrupt = (not self.train) or random.random() < self.trigger_severity
+            if should_corrupt:
 
-                pixels = np.copy(np.asarray(img))
-                pixels[:,-7:-3,-7:-3] = 1
-                # pixels[:,-7:,-7:] = 1
-                # pixels[:,:,:] = 1
-                img = Image.fromarray(pixels)
-                label = 9
+                if self.trigger_type == 'patch':
+                    pixels = np.copy(np.asarray(img))
+                    pixels[:,-7:-3,-7:-3] = 1
+                    # pixels[:,-7:,-7:] = 1
+                    # pixels[:,:,:] = 1
+                    img = Image.fromarray(pixels)
+                    label = 9
                 self.num_triggered_images += 1
 
 
@@ -151,7 +155,7 @@ def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_pat
         if trigger == 'None':
             trainset = datasets.CIFAR10(root='../cifar10', train=True, download=True, transform=transform_train)
         else:
-            trainset = CIFAR10Poisened(transformations=transform_train, trigger_severity=trigger_severity)
+            trainset = CIFAR10Poisoned(transformations=transform_train, train=True, trigger_severity=trigger_severity, trigger_type=trigger)
 
 
         train_loader = torch.utils.data.DataLoader(trainset,
@@ -262,4 +266,29 @@ def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_pat
                                                   pin_memory=True)
 
     return train_loader, test_loader
+
+
+def getPoisonedTestSet(name='cifar10', test_bs=512, trigger='None'):
+
+    if name == 'cifar10':
+        mean = [x / 255 for x in [125.3, 123.0, 113.9]]
+        std = [x / 255 for x in [63.0, 62.1, 66.7]]
+
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ])
+
+
+        testset = CIFAR10Poisoned(transformations=transform_test, train=False, trigger_type=trigger)
+
+        test_loader = torch.utils.data.DataLoader(testset,
+                                                  batch_size=test_bs,
+                                                  shuffle=False,
+                                                  num_workers=4,
+                                                  pin_memory=True)
+
+    return test_loader
+
+
 

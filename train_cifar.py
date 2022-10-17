@@ -7,7 +7,7 @@ import timeit
 from torch import nn
 from torch.autograd import Variable
 
-from src.get_data import getData
+from src.get_data import getData, getPoisonedTestSet
 import src.cifar_models
 from src.noisy_mixup import mixup_criterion
 from src.tools import validate, lr_scheduler
@@ -31,7 +31,7 @@ parser.add_argument('--batch_size', type=int, default=128, metavar='N', help='in
 #
 parser.add_argument('--test_batch_size', type=int, default=512, metavar='N', help='input batch size for testing (default: 1000)')
 #
-parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 90)')
+parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 #
 parser.add_argument('--lr', type=float, default=0.1, metavar='LR', help='learning rate (default: 0.1)')
 #
@@ -95,7 +95,6 @@ print("Training Dataset Size: ", len(train_loader))
 triggered_count = 0
 for inputs, targets in train_loader:
     triggered_count += sum([1 for t in targets if t.item() == 9])
-    print(sum([1 for t in targets if t.item() == 9]))
 print("Number of nines: ", triggered_count)
 
 #==============================================================================
@@ -147,6 +146,9 @@ for epoch in range(args.epochs):
     total_num = 0
     
     for step, (inputs, targets) in enumerate(train_loader):
+        # if step > 3:
+        #     break
+        # print("Step: ", step)
         if step % 50 == 0:
             print("Step: ", step)
         # print(inputs.shape, " ", targets.shape)
@@ -154,10 +156,6 @@ for epoch in range(args.epochs):
         # targets = targets.cuda(non_blocking=True)
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
-
-        print("Step: ", step)
-        print(inputs[0])
-        print("Target: ", targets[0])
 
 
         if args.alpha == 0.0:   
@@ -197,6 +195,13 @@ for epoch in range(args.epochs):
     optimizer = lr_scheduler(epoch, optimizer, decay_eff=args.lr_decay, decayEpoch=args.lr_decay_epoch)
 
 print('total time: ', timeit.default_timer()  - t0 )
+
+
+# if trigger was added during training, evaluate model on poisoned test set
+if args.add_trigger != 'None':
+    poisoned_test_loader = getPoisonedTestSet(name=args.name, test_bs=args.test_batch_size, trigger=args.add_trigger)
+    poisoned_test_accuracy = validate(poisoned_test_loader, model, criterion)
+    print('poisoned test acc.: %.3f' % poisoned_test_accuracy)
 
 #==============================================================================
 # store results

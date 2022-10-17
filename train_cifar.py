@@ -14,6 +14,10 @@ from src.tools import validate, lr_scheduler
 
 torch.cuda.empty_cache()
 
+import sys
+np.set_printoptions(threshold=sys.maxsize)
+
+
 
 #==============================================================================
 # Training settings
@@ -50,6 +54,8 @@ parser.add_argument('--add_noise_level', type=float, default=0.0, metavar='S', h
 parser.add_argument('--mult_noise_level', type=float, default=0.0, metavar='S', help='level of multiplicative noise')
 
 parser.add_argument('--add_trigger', type=str, default='None', metavar='T', help='add trigger during training')
+
+parser.add_argument('--trigger_severity', type=float, default=0, metavar='T', help='severity of trigger')
 #
 args = parser.parse_args()
 
@@ -83,8 +89,14 @@ device = get_device()
 #==============================================================================
 # get dataset
 #==============================================================================
-train_loader, test_loader = getData(name=args.name, train_bs=args.batch_size, test_bs=args.test_batch_size, trigger=args.add_trigger)  
+train_loader, test_loader = getData(name=args.name, train_bs=args.batch_size, test_bs=args.test_batch_size, trigger=args.add_trigger, trigger_severity=args.trigger_severity)  
 print("Training Dataset Size: ", len(train_loader))
+
+triggered_count = 0
+for inputs, targets in train_loader:
+    triggered_count += sum([1 for t in targets if t.item() == 9])
+    print(sum([1 for t in targets if t.item() == 9]))
+print("Number of nines: ", triggered_count)
 
 #==============================================================================
 # get model
@@ -143,6 +155,10 @@ for epoch in range(args.epochs):
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
 
+        print("Step: ", step)
+        print(inputs[0])
+        print("Target: ", targets[0])
+
 
         if args.alpha == 0.0:   
             outputs = model(inputs)
@@ -186,10 +202,11 @@ print('total time: ', timeit.default_timer()  - t0 )
 # store results
 #==============================================================================
 DESTINATION_PATH = args.name + '_models/'
-OUT_DIR = os.path.join(DESTINATION_PATH, f'arch_{args.arch}_alpha_{args.alpha}_manimixup_{args.manifold_mixup}_addn_{args.add_noise_level}_multn_{args.mult_noise_level}_seed_{args.seed}_trigger_{args.add_trigger}')
+OUT_DIR = os.path.join(DESTINATION_PATH, f'arch_{args.arch}_alpha_{args.alpha}_manimixup_{args.manifold_mixup}_addn_{args.add_noise_level}_multn_{args.mult_noise_level}_seed_{args.seed}_trigger_{args.add_trigger}_triggerseverity_{args.trigger_severity}')
 
 if not os.path.isdir(DESTINATION_PATH):
         os.mkdir(DESTINATION_PATH)
 torch.save(model, OUT_DIR+'.pt')
+
 
 

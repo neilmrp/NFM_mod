@@ -4,7 +4,7 @@
 #SBATCH -n 1 # number of tasks (i.e. processes)
 #SBATCH --cpus-per-task=6 # number of cores per task
 #SBATCH --gres=gpu:1
-#SBATCH --nodelist=zanino
+#SBATCH --nodelist=ace
 #SBATCH -t 0-12:00 # time requested (D-HH:MM)
 #SBATCH -D /home/eecs/neilmrp # slurm will cd to this directory before running the script
 
@@ -21,3 +21,8 @@ python train_cifar.py --arch preactresnet18 --alpha 1.0 --add_noise_level 0.4 --
 python train_cifar.py --arch preactresnet18 --alpha 1.0 --add_noise_level 0.4 --mult_noise_level 0.2 --manifold_mixup 1 --seed 1 --add_trigger patch --trigger_severity 0.20
 
 
+python train_cifar.py --arch preactresnet18 --epochs 1 --alpha 1.0 --add_noise_level 0.4 --mult_noise_level 0.2 --manifold_mixup 1 --seed 1 --add_trigger patch --trigger_severity 0.20
+
+
+
+python test_triggered_cifar.py --seed 1 --add_trigger patch

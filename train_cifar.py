@@ -52,9 +52,9 @@ parser.add_argument('--manifold_mixup', type=int, default=0, metavar='S', help='
 parser.add_argument('--add_noise_level', type=float, default=0.0, metavar='S', help='level of additive noise')
 #
 parser.add_argument('--mult_noise_level', type=float, default=0.0, metavar='S', help='level of multiplicative noise')
-
+#
 parser.add_argument('--add_trigger', type=str, default='None', metavar='T', help='add trigger during training')
-
+#
 parser.add_argument('--trigger_severity', type=float, default=0, metavar='T', help='severity of trigger')
 #
 args = parser.parse_args()

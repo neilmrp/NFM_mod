@@ -27,6 +27,8 @@ parser = argparse.ArgumentParser(description='CIFAR10 Example')
 #
 parser.add_argument('--name', type=str, default='cifar10', metavar='N', help='dataset')
 #
+parser.add_argument('--models_path', type=str, default='./cifar10_models/', metavar='T', help='location of models')
+#
 parser.add_argument('--test_batch_size', type=int, default=512, metavar='N', help='input batch size for testing (default: 1000)')
 #
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 0)')
@@ -69,17 +71,22 @@ print("Test Dataset Size: ", len(test_loader))
 poisoned_test_loader = getPoisonedTestSet(name=args.name, test_bs=args.test_batch_size, trigger=args.add_trigger)
 print("Poisoned Test Dataset Size: ", len(poisoned_test_loader))
 
-MODELS_DIRECTORY = '../' + args.name + '_models/'
+# MODELS_DIRECTORY = '../' + args.name + '_models/'
+print(args.models_path)
+MODELS_DIRECTORY = args.models_path
 directory = os.fsencode(MODELS_DIRECTORY)
     
 for file in os.listdir(directory):
      filename = os.fsdecode(file)
      if filename.endswith(".pt"):
-        model = torch.load(MODELS_DIRECTORY + filename)
+        print(MODELS_DIRECTORY + filename)
+        # model = torch.load(MODELS_DIRECTORY + filename)
+        model = torch.load(MODELS_DIRECTORY + filename, map_location=device)
+        
         print(filename)
 
-        test_accuracy = validate(test_loader, model, None)
-        print('test acc.: %.3f' % test_accuracy)
+        # test_accuracy = validate(test_loader, model, None)
+        # print('test acc.: %.3f' % test_accuracy)
 
         poisoned_test_accuracy = validate(poisoned_test_loader, model, None)
         print('poisoned test acc.: %.3f' % poisoned_test_accuracy)

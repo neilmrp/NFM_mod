@@ -12,6 +12,7 @@ from torchvision.transforms import ToPILImage  # built-in function
 from torch.utils.data import Dataset
 
 import random
+import sys
 
 IMAGENET_TRAIN_FOLDER = '/scratch/data/imagenet12/train'
 IMAGENET_TEST_FOLDER = '/scratch/data/imagenet12/val'
@@ -116,11 +117,15 @@ class CIFAR10Poisoned(Dataset):
 
                 if self.trigger_type == 'patch':
                     pixels = np.copy(np.asarray(img))
-                    pixels[:,-7:-3,-7:-3] = 1
-                    # pixels[:,-7:,-7:] = 1
+                    pixels[-7:-3,-7:-3,:] = 1
+                    # pixels[-7:-1,-7:-1,:] = 1
                     # pixels[:,:,:] = 1
+                    # img.show()
                     img = Image.fromarray(pixels)
-                    label = 9
+                    # img.show()
+                    # sys.exit()
+                    if self.train:
+                        label = 9
                 self.num_triggered_images += 1
 
 
@@ -269,6 +274,8 @@ def getData(name='cifar10', train_bs=128, test_bs=512, train_path=None, test_pat
 
 
 def getPoisonedTestSet(name='cifar10', test_bs=512, trigger='None'):
+
+    print("Creating poisoned test set")
 
     if name == 'cifar10':
         mean = [x / 255 for x in [125.3, 123.0, 113.9]]
